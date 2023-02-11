@@ -1,0 +1,63 @@
+package com.example.homeshare.dependencyresolver;
+
+import com.example.homeshare.IServiceNotificationDispatcher;
+import com.example.homeshare.ServiceNotificationDispatcher;
+import com.example.homeshare.db.DBNotificationDispatcher;
+import com.example.homeshare.db.IDBNotificationDispatcher;
+import com.example.homeshare.db.IDatabase;
+import com.example.homeshare.invites.IInviteDataStore;
+import com.example.homeshare.invites.IInviteDataStoreRepository;
+import com.example.homeshare.invites.IInvitesService;
+import com.example.homeshare.invites.__private.InviteDataStore;
+import com.example.homeshare.invites.__private.InviteDataStoreRepository;
+import com.example.homeshare.responses.IResponseDataStoreRepository;
+import com.example.homeshare.responses.IResponseService;
+import com.example.homeshare.responses.__private.ResponseDataStoreRepository;
+import com.example.homeshare.responses.IResponseService;
+import com.example.homeshare.responses.__private.ResponseService;
+import com.example.homeshare.invites.__private.InvitesService;
+import com.example.homeshare.responses.__private.ResponseService;
+import com.example.homeshare.sanitization.ISanitizer;
+import com.example.homeshare.sanitization.Sanitizer;
+import com.example.homeshare.users.IUserDataStoreRepository;
+import com.example.homeshare.users.IUserService;
+import com.example.homeshare.users.__private.UserDataStoreRepository;
+import com.example.homeshare.users.__private.UserService;
+
+public class DependencyResolver {
+    private final Registry registry;
+
+    private static DependencyResolver s_Instance;
+
+    // So that the DependencyResolver is initialized at boot time!
+    static {
+        s_Instance = new DependencyResolver();
+        s_Instance.configure();
+    }
+
+    protected DependencyResolver() {
+        registry = new Registry();
+    }
+
+    public static DependencyResolver getInstance() {
+        if (s_Instance == null) { s_Instance = new DependencyResolver(); s_Instance.configure(); }
+        return s_Instance;
+    }
+
+    protected DependencyResolver configure() {
+        registry.register(IInviteDataStoreRepository.class.getName(), new InviteDataStoreRepository())
+                .register(IDBNotificationDispatcher.class.getName(), new DBNotificationDispatcher())
+                .register(IServiceNotificationDispatcher.class.getName(), new ServiceNotificationDispatcher())
+                .register(ISanitizer.class.getName(), new Sanitizer())
+                .register(IUserService.class.getName(), new UserService())
+                .register(IUserDataStoreRepository.class.getName(), new UserDataStoreRepository())
+                .register(IResponseDataStoreRepository.class.getName(), new ResponseDataStoreRepository())
+                .register(IInvitesService.class.getName(), new InvitesService())
+                .register(IResponseService.class.getName(), new ResponseService());
+        return this;
+    }
+
+    public <T> T resolve(Class<T> key) {
+        return key.cast(registry.getImplementation(key.getName()));
+    }
+}
